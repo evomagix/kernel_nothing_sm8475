@@ -987,7 +987,8 @@ static bool sde_connector_fod_dim_layer_status(struct sde_connector *c_conn)
 	    !c_conn->encoder->crtc->state)
 		return false;
 
-	return !!to_sde_crtc_state(c_conn->encoder->crtc->state)->fod_dim_layer;
+	return (!!to_sde_crtc_state(c_conn->encoder->crtc->state)->fod_dim_layer && 
+	        !!to_sde_crtc_state(c_conn->encoder->crtc->state)->fod_dim_valid);
 }
 
 static int _sde_connector_update_dirty_properties(
@@ -1084,6 +1085,9 @@ static int _sde_connector_update_finger_hbm_status(
 
 	if (display->panel->bl_config.real_bl_level >= display->panel->bl_config.bl_hbm_level)
 	        return 0;
+
+        if (is_aosp)
+                usleep_range(19950, 19950);
 
 	SDE_ATRACE_BEGIN("_sde_connector_update_finger_hbm_statuss");
         if (is_aosp)
