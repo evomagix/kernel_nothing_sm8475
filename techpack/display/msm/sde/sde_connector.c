@@ -983,11 +983,15 @@ static int _sde_connector_update_hdr_metadata(struct sde_connector *c_conn,
 
 static bool sde_connector_fod_dim_layer_status(struct sde_connector *c_conn)
 {
+        struct sde_crtc_state *cstate;
+
 	if (!c_conn->encoder || !c_conn->encoder->crtc ||
 	    !c_conn->encoder->crtc->state)
 		return false;
 
-	return !!to_sde_crtc_state(c_conn->encoder->crtc->state)->fod_dim_layer;
+        cstate = to_sde_crtc_state(c_conn->encoder->crtc->state);
+
+	return (!!cstate->fod_dim_layer && !!cstate->fod_dim_valid);
 }
 
 static int _sde_connector_update_dirty_properties(
@@ -1051,6 +1055,7 @@ static int _sde_connector_update_finger_hbm_status(
 	struct sde_connector *c_conn;
 	struct sde_connector_state *c_state;
 	struct dsi_display * display;
+	struct drm_crtc *crtc = connector->state->crtc;
 
 	if (!connector) {
 		SDE_ERROR("invalid argument\n");
@@ -1068,7 +1073,7 @@ static int _sde_connector_update_finger_hbm_status(
 	}
 
         status = sde_connector_fod_dim_layer_status(c_conn);
-        if ((!c_conn->fingerlayer_dirty) && (status == dsi_panel_get_fod_ui(display->panel))) 
+        if ((!c_conn->fingerlayer_dirty) && (status == dsi_panel_get_fod_ui(display->panel)))
                 return 0;
 
 	if (display->panel->power_mode == SDE_MODE_DPMS_OFF) {
@@ -1093,6 +1098,13 @@ static int _sde_connector_update_finger_hbm_status(
 			mutex_unlock(&c_conn->lock);
 			c_conn->last_panel_power_mode = SDE_MODE_DPMS_ON;
 		}
+		if (status) {
+                        u64 current_vblank = drm_crtc_vblank_count(crtc);
+
+                        wait_event_timeout(*drm_crtc_vblank_waitqueue(crtc),
+                	      	current_vblank != drm_crtc_vblank_count(crtc),
+                	      	msecs_to_jiffies(62/10));
+	        }
 		update_hbm_brightness = true;
 		sde_backlight_device_update_status(c_conn->bl_device);
 		update_hbm_brightness = false;

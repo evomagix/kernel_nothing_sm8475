@@ -1707,6 +1707,8 @@ static void _sde_crtc_blend_setup_mixer(struct drm_crtc *crtc,
 			clear_bit(SDE_CRTC_DIRTY_DIM_LAYERS, cstate->dirty);
 		}
 		if (cstate->fod_dim_layer) {
+		        cstate->fod_dim_valid = false;
+
             		drm_atomic_crtc_for_each_plane(plane, crtc) {
 				state = plane->state;
             			if (!state)
@@ -1723,6 +1725,8 @@ static void _sde_crtc_blend_setup_mixer(struct drm_crtc *crtc,
 
             		_sde_crtc_setup_dim_layer_cfg(crtc, sde_crtc,
             			mixer, cstate->fod_dim_layer);
+
+			cstate->fod_dim_valid = true;
             	}
 	}
 
@@ -1849,6 +1853,7 @@ static void _sde_crtc_blend_setup(struct drm_crtc *crtc,
 			lm = mixer[i].hw_lm;
 			if (lm->ops.clear_dim_layer)
 				lm->ops.clear_dim_layer(lm);
+	                sde_crtc_state->fod_dim_valid = false;
 		}
 	}
 
@@ -5414,6 +5419,8 @@ sde_crtc_fod_atomic_check(struct sde_crtc_state *cstate,
 
 	if (!cstate->fod_dim_layer) {
 		set_bit(SDE_CRTC_DIRTY_DIM_LAYERS, cstate->dirty);
+		if (test_bit(SDE_CRTC_DIRTY_DIM_LAYERS, cstate->dirty))
+	                cstate->fod_dim_valid = false;
 		return;
 	}
 
