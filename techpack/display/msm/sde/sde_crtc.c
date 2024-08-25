@@ -1707,8 +1707,6 @@ static void _sde_crtc_blend_setup_mixer(struct drm_crtc *crtc,
 			clear_bit(SDE_CRTC_DIRTY_DIM_LAYERS, cstate->dirty);
 		}
 		if (cstate->fod_dim_layer) {
-		        cstate->fod_dim_valid = false;
-
             		drm_atomic_crtc_for_each_plane(plane, crtc) {
 				state = plane->state;
             			if (!state)
@@ -5415,7 +5413,9 @@ sde_crtc_fod_atomic_check(struct sde_crtc_state *cstate,
 
 	cstate->fod_dim_layer = fod_dim_layer;
 
-	if (!cstate->fod_dim_layer) {
+	if (!!cstate->fod_dim_layer) {
+	        cstate->fod_dim_valid = false;
+	} else if (!cstate->fod_dim_layer) {
 		set_bit(SDE_CRTC_DIRTY_DIM_LAYERS, cstate->dirty);
 		if (test_bit(SDE_CRTC_DIRTY_DIM_LAYERS, cstate->dirty))
 	                cstate->fod_dim_valid = false;
